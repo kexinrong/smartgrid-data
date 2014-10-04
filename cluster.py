@@ -50,9 +50,9 @@ def thresholdTest(S, centroid, theta):
 
 def maxLabel(centroidMap):
 	maxLabel = None
-	for label in centroidsMap:
-		if (currentMax == None or int(label) > currentMax):
-			currentMax = int(label)
+	for label in centroidMap:
+		if (maxLabel == None or int(label) > maxLabel):
+			maxLabel = int(label)
 	return maxLabel
 
 def updateLabels(S, indices, l, centroidMap, labels):
