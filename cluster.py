@@ -1,8 +1,11 @@
+import sys
 import numpy as np
-from scipy.cluster.vq import vq, kmeans, whiten
+from sklearn.cluster import KMeans, MiniBatchKMeans
+from numpy import linalg as LA
 
-dataFile = "data/case2065_BFS_2012baseline_2012_07_15_00_00_00_PDT_20140325_1424.txt"
-initialK = 100
+dataFile = sys.argv[1]
+minK = int(sys.argv[2])
+theta = float(sys.argv[3])
 
 vectorLength = None
 
@@ -18,6 +21,31 @@ ids = np.loadtxt(dataFile,
 	skiprows = 1,
 	usecols = [0])
 
-clusters = kmeans(data, initialK)
+km = KMeans(n_clusters=minK, init='k-means++', max_iter=100, n_init=1)
+clusters = km.fit(data)
 
-clusters
+def dataWithLabel(l, labels, data):
+	indices = []
+	for i in range(0, len(labels)):
+		if labels[i] == l:
+			indices.append(i)
+	S_l = []
+	for index in indices:
+		S_l.append(data[index])
+	return S_l
+
+def thresholdTest(S, centroid, theta):
+	totalDistance = 0
+	for x in S:
+		totalDistance +=  LA.norm(x - centroid)
+	threshold = theta * LA.norm(centroid)
+	print totalDistance
+	return totalDistance < threshold
+
+
+
+S_0 = dataWithLabel(0, km.labels_, data)
+print S_0
+print thresholdTest(S_0, km.cluster_centers_, theta)
+
+
