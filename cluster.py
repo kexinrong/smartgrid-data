@@ -2,6 +2,8 @@ import sys
 import numpy as np
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from numpy import linalg as LA
+import matplotlib.pyplot as plt
+
 
 dataFile = sys.argv[1]
 minK = int(sys.argv[2])
@@ -25,13 +27,13 @@ ids = np.loadtxt(dataFile,
 def initialCentroids(clusterCenters):
 	centroidsMap = {}
 	for i in range(len(clusterCenters)):
-		centroidsMap[str(i)] = clusterCenters[i]
+		centroidsMap[i] = clusterCenters[i]
 	return centroidsMap
 
 def dataWithLabel(l, labels, data):
 	indices = []
 	for i in range(0, len(labels)):
-		if labels[i] == int(l):
+		if labels[i] == l:
 			indices.append(i)
 	S_l = data[indices]
 	return (indices, S_l)
@@ -56,6 +58,16 @@ def updateLabels(S, indices, centroidMap):
 	labelOffset = maxLabel(centroidMap) + 1
 	return km.cluster_centers_
 
+def plot_cluster(label, centroidMap, S):
+	for shape in S:
+		plt.plot(shape, color='black')
+	plt.plot(centroidMap, 'o', markerfacecolor='None', 
+		     markeredgewidth=2, markeredgecolor='red')
+	plt.xlabel('Hour')
+	plt.ylabel('Normal Usage')
+	plt.title('#' + str(label))
+	plt.show()
+
 centroidMap = {}
 K = minK
 # Initial centroid
@@ -70,24 +82,43 @@ while True:
 	km.fit(data)
 	centroidMap = initialCentroids(km.cluster_centers_)
 	centroids = km.cluster_centers_
-	labels = km.labels_
 
 	n_v = []
+	S = []
 	for label in centroidMap:
-		(indices, S_l) = dataWithLabel(label, km.labels_, data)
+		S.append([])
+	for label in centroidMap:
+		(indices, S[label]) = dataWithLabel(label, km.labels_, data)
 		# Record clusters violating the threshold test
-		if not thresholdTest(S_l, centroidMap[label], theta):
+		if not thresholdTest(S[label], centroidMap[label], theta):
 			n_v.append(centroidMap[label])
 			# Run K-mean with K = 2
-			new_centers = updateLabels(S_l, indices, centroidMap)
+			new_centers = updateLabels(S[label], indices, centroidMap)
 			# Add new centroids
 			centroids = np.append(centroids, new_centers, axis = 0)
 
 	if len(n_v) == 0:
-		print K
-		print centroids
+		# Plot the biggest cluster
+		biggest = 0
+		for label in centroidMap:
+			if len(S[label]) > len(S[biggest]):
+				biggest = label
+		print "Total clusters: ", K
+		print "Biggest cluster size: ", len(S[biggest]) 
+		l = biggest # label to plot
+		plot_cluster(l, centroidMap[l], S[l])
+
+		# Output centroids to file
+		f = open("adaptive_k_centers.txt", "w")
+		f.write(str(K) + '\n')
+		for label in centroidMap:
+			for i in range(vectorLength):
+				if i < vectorLength - 1:
+					f.write(str(centroidMap[label][i]) + ' ')
+				else:
+					f.write(str(centroidMap[label][i]) + '\n')
+		f.close()
 		break
 	else:
 		K += 2 * len(n_v)
 
-	print K
