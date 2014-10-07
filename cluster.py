@@ -22,10 +22,6 @@ ids = np.loadtxt(dataFile,
 	usecols = [0])
 
 
-km = KMeans(n_clusters=minK, init='k-means++', max_iter=100, n_init=1)
-clusters = km.fit(data)
-
-
 def initialCentroids(clusterCenters):
 	centroidsMap = {}
 	for i in range(len(clusterCenters)):
@@ -35,7 +31,7 @@ def initialCentroids(clusterCenters):
 def dataWithLabel(l, labels, data):
 	indices = []
 	for i in range(0, len(labels)):
-		if labels[i] == l:
+		if labels[i] == int(l):
 			indices.append(i)
 	S_l = data[indices]
 	return (indices, S_l)
@@ -45,7 +41,6 @@ def thresholdTest(S, centroid, theta):
 	for x in S:
 		totalDistance +=  LA.norm(x - centroid)
 	threshold = theta * LA.norm(centroid)
-	print totalDistance
 	return totalDistance < threshold
 
 def maxLabel(centroidMap):
@@ -55,17 +50,44 @@ def maxLabel(centroidMap):
 			maxLabel = int(label)
 	return maxLabel
 
-def updateLabels(S, indices, l, centroidMap, labels):
+def updateLabels(S, indices, centroidMap):
 	km = KMeans(n_clusters=2, init='k-means++', max_iter=100, n_init=1)
 	km.fit(S)
 	labelOffset = maxLabel(centroidMap) + 1
-	print km.labels_
+	return km.cluster_centers_
 
-centroidMap = initialCentroids(km.cluster_centers_)
-labels = km.labels_
+centroidMap = {}
+K = minK
+# Initial centroid
+centroids = np.zeros([K, vectorLength], dtype=np.float)
 
-(indices, S_0) = dataWithLabel(0, km.labels_, data)
-updateLabels(S_0, indices, 0, centroidMap, labels)
-print thresholdTest(S_0, km.cluster_centers_, theta)
+while True:
+	# Run kmeans
+	if not centroidMap:
+		km = KMeans(n_clusters=K, init='k-means++', max_iter=100, n_init=1)
+	else:
+		km = KMeans(n_clusters=K, init=centroids, max_iter=100, n_init=1)
+	km.fit(data)
+	centroidMap = initialCentroids(km.cluster_centers_)
+	centroids = km.cluster_centers_
+	labels = km.labels_
 
+	n_v = []
+	for label in centroidMap:
+		(indices, S_l) = dataWithLabel(label, km.labels_, data)
+		# Record clusters violating the threshold test
+		if not thresholdTest(S_l, centroidMap[label], theta):
+			n_v.append(centroidMap[label])
+			# Run K-mean with K = 2
+			new_centers = updateLabels(S_l, indices, centroidMap)
+			# Add new centroids
+			centroids = np.append(centroids, new_centers, axis = 0)
 
+	if len(n_v) == 0:
+		print K
+		print centroids
+		break
+	else:
+		K += 2 * len(n_v)
+
+	print K
