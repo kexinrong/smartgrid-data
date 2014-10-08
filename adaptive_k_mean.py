@@ -78,6 +78,7 @@ while True:
 	if not centroidMap:
 		km = KMeans(n_clusters=K, init='k-means++', max_iter=100, n_init=1)
 	else:
+		# use centroids from last iteration 
 		km = KMeans(n_clusters=K, init=centroids, max_iter=100, n_init=1)
 	km.fit(data)
 	centroidMap = initialCentroids(km.cluster_centers_)
@@ -89,34 +90,37 @@ while True:
 		S.append([])
 	for label in centroidMap:
 		(indices, S[label]) = dataWithLabel(label, km.labels_, data)
-		# Record clusters violating the threshold test
+		# record clusters violating the threshold test
 		if not thresholdTest(S[label], centroidMap[label], theta):
 			n_v.append(centroidMap[label])
-			# Run K-mean with K = 2
+			# run K-mean with K = 2
 			new_centers = updateLabels(S[label], indices, centroidMap)
-			# Add new centroids
+			# add new centroids
 			centroids = np.append(centroids, new_centers, axis = 0)
 
 	if len(n_v) == 0:
-		# Plot the biggest cluster
-		biggest = 0
+		# plot the smallest cluster
+		smallest = 0
 		for label in centroidMap:
-			if len(S[label]) > len(S[biggest]):
-				biggest = label
+			if len(S[label]) < len(S[smallest]):
+				smallest = label
 		print "Total clusters: ", K
-		print "Biggest cluster size: ", len(S[biggest]) 
-		l = biggest # label to plot
+		print "Smallest cluster size: ", len(S[smallest]) 
+		l = smallest # label to plot
 		plot_cluster(l, centroidMap[l], S[l])
 
-		# Output centroids to file
 		f = open("adaptive_k_centers.txt", "w")
+		# total number of clusters
 		f.write(str(K) + '\n')
 		for label in centroidMap:
+			# center for the cluster
 			for i in range(vectorLength):
 				if i < vectorLength - 1:
 					f.write(str(centroidMap[label][i]) + ' ')
 				else:
 					f.write(str(centroidMap[label][i]) + '\n')
+			# cluster size
+			f.write(str(len(S[label])) + '\n')
 		f.close()
 		break
 	else:
