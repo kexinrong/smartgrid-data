@@ -5,21 +5,21 @@ from numpy import linalg as LA
 import matplotlib.pyplot as plt
 
 
-dataFile = sys.argv[1]
+fileName = sys.argv[1]
 minK = int(sys.argv[2])
 theta = float(sys.argv[3])
 
 vectorLength = None
 
-with open(dataFile, 'r') as f:
-  firstLine = f.readline()
+with open(fileName, 'r') as dataFile:
+  firstLine = dataFile.readline()
   vectorLength = int(firstLine)
 
-data = np.loadtxt(dataFile,
+data = np.loadtxt(fileName,
 	skiprows = 1,
 	usecols = range(1, vectorLength + 1))
 
-ids = np.loadtxt(dataFile,
+ids = np.loadtxt(fileName,
 	skiprows = 1,
 	usecols = [0])
 
