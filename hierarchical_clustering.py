@@ -13,18 +13,22 @@ clusterSizeMap = {}
 centroidLine = False
 clusterSizeLine = False
 
+vectorLength = None
+
 label = 0
 
 with open(dataFile, 'r') as f:
 	for line in f:
 		if centroidLine:
 			coords = map(float, line.split())
-			centroidMap[str(label)] = np.array(coords)
+			if vectorLength == None:
+				vectorLength = len(coords)
+			centroidMap[label] = np.array(coords)
 			centroidLine = False
 			clusterSizeLine = True
 		elif clusterSizeLine:
 			clusterSize = map(int, line.split())[0]
-			clusterSizeMap[str(label)] = clusterSize
+			clusterSizeMap[label] = clusterSize
 			centroidLine = True
 			clusterSizeLine = False
 			label += 1
@@ -64,7 +68,20 @@ while len(centroidMap) > targetSize:
 	del centroidMap[j]
 	del clusterSizeMap[j]
 
+outputFileName = "hierarchical_centers.txt"
 
+with open(outputFileName, 'w') as f:
+	f.write(str(len(centroidMap)) + '\n')
+	for label in centroidMap:
+	   	# center for the cluster
+	   	for i in range(vectorLength):
+	   		if i < vectorLength - 1:
+	   			f.write(str(centroidMap[label][i]) + ' ')
+	   		else:
+	   			f.write(str(centroidMap[label][i]) + '\n')
+	   		# cluster size
+	   	f.write(str(clusterSizeMap[label]) + '\n')
+		
 
 
 
