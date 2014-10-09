@@ -4,6 +4,8 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from numpy import linalg as LA
 import matplotlib.pyplot as plt
 
+from cluster import Cluster, ClusterSet
+
 
 fileName = sys.argv[1]
 minK = int(sys.argv[2])
@@ -58,23 +60,65 @@ def updateLabels(S, indices, centroidMap):
 	labelOffset = maxLabel(centroidMap) + 1
 	return km.cluster_centers_
 
-def plot_cluster(label, centroidMap, S):
-	for shape in S:
+def plot_cluster(cluster):
+	for shape in cluster.points:
 		plt.plot(shape, color='black')
-	plt.plot(centroidMap, 'o', markerfacecolor='None', 
+	plt.plot(cluster.centroid, 'o', markerfacecolor='None', 
 		     markeredgewidth=2, markeredgecolor='red')
 	plt.xlabel('Hour')
 	plt.ylabel('Normal Usage')
-	plt.title('#' + str(label))
+	plt.title('#' + str(cluster.label))
 	plt.show()
 
-centroidMap = {}
 K = minK
 # Initial centroid
 centroids = np.zeros([K, vectorLength], dtype=np.float)
 
+km = KMeans(n_clusters=K, init='k-means++', max_iter=100, n_init=1)
+km.fit(data)
+
+clusterSet = ClusterSet(data)
+
 while True:
-	# Run kmeans
+	clusterSet.fitData(K)
+	n_v = clusterSet.findViolations(theta)
+	K += 2 * len(n_v)
+
+	for label in n_v:
+		clusterSet.splitLabel(label)
+
+	if len(n_v) == 0:
+		# plot the smallest cluster
+		smallest = 0
+
+
+
+		
+		print "Total clusters: ", K
+		print "Smallest cluster size: ", len(clusterSet.getCluster(smallest).points)
+		l = clusterSet.smallestCluster()
+		plot_cluster(clusterSet.getCluster(l))
+
+		f = open("adaptive_k_centers.txt", "w")
+		# total number of clusters
+		f.write(str(K) + '\n')
+		for label in clusterSet.clusterMap.keys():
+			# center for the cluster
+			cluster = clusterSet.getCluster(label)
+			centroid = cluster.centroid
+			for i in range(vectorLength):
+				if i < vectorLength - 1:
+					f.write(str(centroid[i]) + ' ')
+				else:
+					f.write(str(centroid[i]) + '\n')
+			# cluster size
+			f.write(str(len(cluster.points)))
+		f.close()
+		break
+
+
+
+	"""# Run kmeans
 	if not centroidMap:
 		km = KMeans(n_clusters=K, init='k-means++', max_iter=100, n_init=1)
 	else:
@@ -124,5 +168,5 @@ while True:
 		f.close()
 		break
 	else:
-		K += 2 * len(n_v)
+		K += 2 * len(n_v)"""
 
