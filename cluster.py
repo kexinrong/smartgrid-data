@@ -1,5 +1,6 @@
 from sklearn.cluster import KMeans, MiniBatchKMeans
 import numpy as np
+import math
 from numpy import linalg as LA
 
 def dataWithLabel(data, label, labels):
@@ -25,7 +26,7 @@ class Cluster:
 
 	def isViolation(self, theta):
 		for point in self.points:
-			if LA.norm(point - self.centroid) > theta * LA.norm(self.centroid):
+			if LA.norm(point - self.centroid) > math.sqrt(theta) * LA.norm(self.centroid):
 				return True
 		return False
 
@@ -33,6 +34,12 @@ class ClusterSet:
 	def __init__(self, data):
 		self.data = data
 		self.clusterMap = None
+
+	def normalize(self):
+		for i in range(len(self.data)):
+			consumption = sum(self.data[i])
+			for j in range(len(self.data[i])):
+				self.data[i][j] /= consumption
 
 	def maxLabel(self):
 		maxLabel = None
@@ -90,12 +97,12 @@ class ClusterSet:
 		del self.clusterMap[label]
 
 	def smallestCluster(self):
-		smallestSize = None
-		for cluster in self.clusterMap.values():
-			if smallestSize == None or len(cluster.points) < smallestSize:
-				smallestSize = len(cluster.points)
-		return smallestSize
-
+		smallest = None
+		for label in self.clusterMap:
+			if smallest == None or \
+			   len(self.clusterMap[label].points) < len(self.clusterMap[smallest].points):
+				smallest = label
+		return smallest
 
 
 
