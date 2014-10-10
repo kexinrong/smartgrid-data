@@ -36,41 +36,43 @@ def plot_cluster(cluster):
 	plt.show()
 
 K = minK
+# Initial centroid
+centroids = np.zeros([K, vectorLength], dtype=np.float)
 
-thetaValues = .0001 * np.arange(1, 10)
-clusterSizes = []
 
-for theta in thetaValues:
-	print "Theta:\n", theta
-	K = minK
-	# Initial cluster set
-	clusterSet = ClusterSet(data)
-	clusterSet.normalize()
+clusterSet = ClusterSet(data)
+clusterSet.normalize()
 
-	while True:
-		clusterSet.fitData(K)
-		n_v = clusterSet.findViolations(theta)
-		K += len(n_v)
+while True:
+	clusterSet.fitData(K)
+	n_v = clusterSet.findViolations(theta)
+	K += len(n_v)
 
-		for label in n_v:
-			clusterSet.splitLabel(label)
+	for label in n_v:
+		clusterSet.splitLabel(label)
 
-		if len(n_v) == 0:
-			clusterSizes.append(K)
-			break
+	if len(n_v) == 0:
+		for cluster in clusterSet.clusterMap.values():
+			print len(cluster.points)
+		# plot the smallest cluster
+		l = clusterSet.largestCluster()
+		print "Total clusters: ", K
+		print "Smallest cluster size: ", len(clusterSet.getCluster(l).points)
+		plot_cluster(clusterSet.getCluster(l))
 
-plt.scatter(thetaValues, clusterSizes)
-plt.title("Number of clusters as a function of $\\theta$")
-plt.xlabel("$\\theta$")
-plt.ylabel("Number of clusters")
-plt.xlim(0, 1.1 * max(thetaValues))
-plt.ylim(0, 1.1 * max(clusterSizes))
-plt.show()
-
-plt.scatter(thetaValues, np.log(clusterSizes))
-plt.title("log(Number of clusters) as a function of $\\theta$")
-plt.xlabel("$\\theta$")
-plt.ylabel("log(Number of clusters)")
-plt.xlim(0, 1.1 * max(thetaValues))
-plt.ylim(0, 1.1 * max(np.log(clusterSizes)))
-plt.show()
+		f = open("adaptive_k_centers.txt", "w")
+		# total number of clusters
+		f.write(str(K) + '\n')
+		for label in clusterSet.clusterMap.keys():
+			# center for the cluster
+			cluster = clusterSet.getCluster(label)
+			centroid = cluster.centroid
+			for i in range(vectorLength):
+				if i < vectorLength - 1:
+					f.write(str(centroid[i]) + ' ')
+				else:
+					f.write(str(centroid[i]) + '\n')
+			# cluster size
+			f.write(str(len(cluster.points)))
+		f.close()
+		break
