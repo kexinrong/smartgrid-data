@@ -25,8 +25,9 @@ class Cluster:
 		self.points = points
 
 	def isViolation(self, theta):
+		threshold = theta * LA.norm(self.centroid)
 		for point in self.points:
-			if LA.norm(point - self.centroid) > math.sqrt(theta) * LA.norm(self.centroid):
+			if LA.norm(point - self.centroid) > threshold:
 				return True
 		return False
 
@@ -36,10 +37,14 @@ class ClusterSet:
 		self.clusterMap = None
 
 	def normalize(self):
+		average = np.mean(self.data, axis=0)
+		self.data = np.subtract(self.data, average)
+
+		average = np.mean(self.data, axis=0)
 		for i in range(len(self.data)):
 			consumption = sum(self.data[i])
-			for j in range(len(self.data[i])):
-				self.data[i][j] /= consumption
+			self.data[i] /= (consumption)
+		average = np.mean(self.data, axis=0)
 
 	def maxLabel(self):
 		maxLabel = None
@@ -87,12 +92,10 @@ class ClusterSet:
 		cluster0 = Cluster(labelOffset, C_0, S_0)
 		self.clusterMap[labelOffset] = cluster0
 
-
-
 		S_1 = dataWithLabel(cluster.points, 1, km.labels_)
 		C_1 = km.cluster_centers_[1]
 		cluster1 = Cluster(labelOffset + 1, C_1, S_1)
-		self.clusterMap[labelOffset] = cluster1
+		self.clusterMap[labelOffset + 1] = cluster1
 
 		del self.clusterMap[label]
 
@@ -103,6 +106,14 @@ class ClusterSet:
 			   len(self.clusterMap[label].points) < len(self.clusterMap[smallest].points):
 				smallest = label
 		return smallest
+
+	def largestCluster(self):
+		largest = None
+		for label in self.clusterMap:
+			if largest == None or \
+			   len(self.clusterMap[label].points) > len(self.clusterMap[largest].points):
+				largest = label
+		return largest
 
 
 
