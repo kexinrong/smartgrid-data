@@ -36,19 +36,14 @@ def plot_cluster(cluster):
 	plt.show()
 
 K = minK
-# Initial centroid
-centroids = np.zeros([K, vectorLength], dtype=np.float)
-
-km = KMeans(n_clusters=K, init='k-means++', max_iter=100, n_init=1)
-km.fit(data)
-
+# Initial cluster set
 clusterSet = ClusterSet(data)
 clusterSet.normalize()
 
 while True:
 	clusterSet.fitData(K)
 	n_v = clusterSet.findViolations(theta)
-	K += 2 * len(n_v)
+	K += len(n_v)
 
 	for label in n_v:
 		clusterSet.splitLabel(label)
