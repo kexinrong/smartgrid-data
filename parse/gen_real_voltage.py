@@ -3,6 +3,7 @@
 
 from scipy.io import loadmat
 import glob
+import math
 HOUSE_START = 525 # start index of house
 HOUSE_END = 1933 # end index of hosue
 NUM_HOUSE = HOUSE_END - HOUSE_START + 1
@@ -69,8 +70,10 @@ for mat in INPUTS:
         index = phases[i + 1]
         raw_shape = []
         for t in range(288):
+            real = voltage[i][index].real 
+            imag = voltage[i][index].imag 
             # Get the real power of specified phase
-            raw_shape.append(voltage[i][index].real)
+            raw_shape.append(math.sqrt(real * real + imag * imag))
             index += 3   
         rebin(raw_shape)
         shape = rebin(raw_shape)
