@@ -37,14 +37,14 @@ class ClusterSet:
 		self.clusterMap = None
 
 	def normalize(self):
-		average = np.mean(self.data, axis=0)
-		self.data = np.subtract(self.data, average)
-
-		average = np.mean(self.data, axis=0)
 		for i in range(len(self.data)):
 			consumption = sum(self.data[i])
 			self.data[i] /= (consumption)
-		average = np.mean(self.data, axis=0)
+		
+	def voltage_normalize(self):
+		for i in range(len(self.data)):
+			for j in range(len(self.data[i])):
+				self.data[i][j] -= 1
 
 	def maxLabel(self):
 		maxLabel = None

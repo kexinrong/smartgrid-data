@@ -18,7 +18,8 @@ vectorLength = None
 
 label = 0
 
-totalClusters = None
+K = None
+totalShapes = 0
 
 with open(fileName, 'r') as f:
 	for line in f:
@@ -35,8 +36,9 @@ with open(fileName, 'r') as f:
 			centroidLine = True
 			clusterSizeLine = False
 			label += 1
+			totalShapes += clusterSize
 		else:
-			totalClusters = int(line)
+			K = int(line)
 			centroidLine = True
 
 sortedClusterMapEntries = sorted(clusterSizeMap.items(), key=operator.itemgetter(1), reverse=True)
@@ -53,14 +55,16 @@ for i in range(1, numberOfLoadShapes + 1):
 	y = centroidMap[label]
 	plt.subplot(h, w, i)
 	plt.scatter(x, y)
-	clusterSize = mostCommonClusterSizeLabels[i - 1]
+	clusterSize = clusterSizeMap[label]
 
-	percent = 100. * clusterSize / totalClusters
+	percent = 100. * clusterSize / totalShapes
 	plt.title(str(percent) + "%")
 	plt.xlabel("Hour")
 	plt.ylabel("Norm. Usage")
 	plt.xlim(0, 25)
+	plt.ylim(0.003, 0.040)
 
-plt.tight_layout()
+#plt.tight_layout()
+plt.subplots_adjust(wspace=0.7, hspace=0.7)
 plt.show()
 

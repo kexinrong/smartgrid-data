@@ -73,6 +73,6 @@ while True:
 				else:
 					f.write(str(centroid[i]) + '\n')
 			# cluster size
-			f.write(str(len(cluster.points)))
+			f.write(str(len(cluster.points)) + '\n')
 		f.close()
 		break
