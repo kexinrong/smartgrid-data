@@ -3,9 +3,10 @@ import numpy as np
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from numpy import linalg as LA
 import matplotlib.pyplot as plt
-
 from cluster import Cluster, ClusterSet
 
+is_load = True
+is_voltage = False
 
 fileName = sys.argv[1]
 minK = int(sys.argv[2])
@@ -17,9 +18,15 @@ with open(fileName, 'r') as dataFile:
   firstLine = dataFile.readline()
   vectorLength = int(firstLine)
 
-data = np.loadtxt(fileName,
-	skiprows = 1,
-	usecols = range(1, vectorLength + 1))
+if is_load:
+	data = np.loadtxt(fileName,
+		skiprows = 1,
+		usecols = range(5, vectorLength + 5))
+else:
+	data = np.loadtxt(fileName,
+		skiprows = 1,
+		usecols = range(1, vectorLength + 1))
+
 
 ids = np.loadtxt(fileName,
 	skiprows = 1,
@@ -41,7 +48,10 @@ centroids = np.zeros([K, vectorLength], dtype=np.float)
 
 
 clusterSet = ClusterSet(data)
-clusterSet.normalize()
+if is_load:
+	clusterSet.normalize()
+if is_voltage:
+	clusterSet.voltage_normalize()
 
 while True:
 	clusterSet.fitData(K)
@@ -55,7 +65,7 @@ while True:
 		for cluster in clusterSet.clusterMap.values():
 			print len(cluster.points)
 		# plot the smallest cluster
-		l = clusterSet.largestCluster()
+		l = clusterSet.smallestCluster()
 		print "Total clusters: ", K
 		print "Smallest cluster size: ", len(clusterSet.getCluster(l).points)
 		plot_cluster(clusterSet.getCluster(l))
