@@ -12,6 +12,7 @@ MODELS = ['baseline_cvr', 'baseline', 'optimized_cvr', 'optimized']
 YEARS = ['2012', '2016', '2020']
 MONTHS = ['_07_', '_10_', '_02_', '_03_']
 INPUTS = glob.glob('../data/output_bfs_social/*/*.mat')
+FILTER_PV = True
 
 def rebin(raw_shape):
     '''Bin the raw data points according to BIN_SIZE'''
@@ -70,6 +71,15 @@ def get_devices(network):
         devices[int(table[i][0].real)][3] = 1
     return devices
 
+def get_pv(table):
+    pv = {}
+    for i in range(len(table)):
+        idx = int(table[i][0].real)
+        pv[idx] = []
+        for j in range(288):
+            pv[idx].append(table[i][j + 2].real)
+    return pv
+
 
 # Open one output file for each optimization model
 outputs = []
@@ -78,7 +88,7 @@ for i in range(len(YEARS)):
     for j in range(len(MODELS)):
         outputs[i].append([])
         for k in range(len(MONTHS)):
-            f = open('../data/load/' + YEARS[i] + MODELS[j] + MONTHS[k][:-1] + '.txt', 'w')
+            f = open('../data/load/pv/' + YEARS[i] + MODELS[j] + MONTHS[k][:-1] + '.txt', 'w')
             # Write bin size
             f.write(str(24 * 12 / BIN_SIZE) + '\n')
             outputs[i][j].append(f)
@@ -92,12 +102,18 @@ for mat in INPUTS:
     # Find model used by the mat file
     (x, y, z) = find_model(mat)
     load = m['network']['bus'][0][0]
+    # Get pv generations for each time slice
+    if FILTER_PV:
+        pv = get_pv(m['network']['pv'][0][0])
     for i in range(HOUSE_START - 1, HOUSE_END):
         index = phases[i + 1]
         raw_shape = []
         for t in range(288):
             # Get the real load of specified phase
             raw_shape.append(load[i][5 + index].real)
+            # substract pv from total load
+            if FILTER_PV and (i + 1) in pv:
+                raw_shape[t] -= pv[i + 1][t]
             index += 3   
         shape = rebin(raw_shape)
         # write to correpsonding output file        
