@@ -2,6 +2,7 @@
 #  different files according to optimize model
 
 from scipy.io import loadmat
+from collections import deque
 import glob
 import math
 HOUSE_START = 525 # start index of house
@@ -12,7 +13,10 @@ MODELS = ['baseline_cvr', 'baseline', 'optimized_cvr', 'optimized']
 YEARS = ['2012', '2016', '2020']
 MONTHS = ['_07_', '_10_', '_02_', '_03_']
 INPUTS = glob.glob('../data/output_bfs_social/*/*.mat')
-FILTER_PV = True
+FILTER_PV = False
+N = 2065 # Number of nodes
+ROOT = 1 # Root node
+
 
 def rebin(raw_shape):
     '''Bin the raw data points according to BIN_SIZE'''
@@ -93,6 +97,26 @@ for i in range(len(YEARS)):
             f.write(str(24 * 12 / BIN_SIZE) + '\n')
             outputs[i][j].append(f)
 
+# Build circuit tree
+tree = {}
+for i in range(1, N + 1):
+    tree[i] = []
+lines = open('lines.txt', 'r')
+for i in range(N - 1):
+    line = lines.readline().split()
+    tree[int(line[0])].append(int(line[1]))
+lines.close()
+
+queue = deque()
+queue.append(ROOT)
+hops = {}
+hops[ROOT] = 0
+while len(queue) > 0:
+    curr = queue.popleft()
+    for node in tree[curr]:
+        hops[node] = hops[curr] + 1
+        queue.append(node)
+
 for mat in INPUTS:
     print "Processing: " + mat    
     m = loadmat(mat)
@@ -117,7 +141,7 @@ for mat in INPUTS:
             index += 3   
         shape = rebin(raw_shape)
         # write to correpsonding output file        
-        outputs[x][y][z].write(str(i + 1) + ' ')
+        outputs[x][y][z].write(str(i + 1) + ' ' + str(hops[i + 1]) + ' ')
         for d in devices[i + 1]:
             outputs[x][y][z].write(str(d) + ' ')
         outputs[x][y][z].write(' '.join(shape) + '\n')

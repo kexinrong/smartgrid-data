@@ -2,6 +2,7 @@
 #  different files according to optimize model
 
 from scipy.io import loadmat
+from collections import deque
 import glob
 import math
 HOUSE_START = 525 # start index of house
@@ -11,6 +12,9 @@ BIN_SIZE = 12 # bin every 12 data points => 1 hour interval
 MODELS = ['baseline_cvr', 'baseline', 'optimized_cvr', 'optimized']
 YEARS = ['2012', '2016', '2020']
 INPUTS = glob.glob('../data/output_bfs_social/*/*.mat')
+N = 2065 # Number of nodes
+ROOT = 1 # Root node
+
 
 def rebin(raw_shape):
     '''Bin the raw data points according to BIN_SIZE'''
@@ -46,6 +50,27 @@ def find_model(filename):
             if model in filename:
                 return (i, j)
 
+def get_devices(network):
+    devices = {}
+    for i in range(2065):
+        devices[i] = [0, 0, 0, 0]
+    #hvac
+    table = network['hvac'][0][0]
+    for i in range(len(table)):
+        devices[int(table[i][0].real)][0] = 1
+    #pv
+    table = network['pv'][0][0]
+    for i in range(len(table)):
+        devices[int(table[i][0].real)][1] = 1
+    #ev
+    table = network['ev'][0][0]
+    for i in range(len(table)):
+        devices[int(table[i][0].real)][2] = 1
+    #pool
+    table = network['pool'][0][0]
+    for i in range(len(table)):
+        devices[int(table[i][0].real)][3] = 1
+    return devices
 
 
 # Open one output file for each optimization model
@@ -58,11 +83,32 @@ for i in range(len(YEARS)):
         f.write(str(24 * 12 / BIN_SIZE) + '\n')        
         outputs[i].append(f)
 
+# Build circuit tree
+tree = {}
+for i in range(1, N + 1):
+    tree[i] = []
+lines = open('lines.txt', 'r')
+for i in range(N - 1):
+    line = lines.readline().split()
+    tree[int(line[0])].append(int(line[1]))
+lines.close()
+
+queue = deque()
+queue.append(ROOT)
+hops = {}
+hops[ROOT] = 0
+while len(queue) > 0:
+    curr = queue.popleft()
+    for node in tree[curr]:
+        hops[node] = hops[curr] + 1
+        queue.append(node)
+
 for mat in INPUTS:
     print "Processing: " + mat    
     m = loadmat(mat)
     # Get phase of each house
     phases = get_phase(m['network']['bus'][0][0])
+    devices = get_devices(m['network'])
     # Find model used by the mat file
     (x, y) = find_model(mat)
     voltage = m['network']['OUTPUT_VOLTAGE'][0][0]
@@ -75,10 +121,12 @@ for mat in INPUTS:
             # Get the real power of specified phase
             raw_shape.append(math.sqrt(real * real + imag * imag))
             index += 3   
-        rebin(raw_shape)
         shape = rebin(raw_shape)
+        outputs[x][y].write(str(i + 1) + ' ' + str(hops[i + 1]) + ' ')
+        for d in devices[i + 1]:
+            outputs[x][y].write(str(d) + ' ')
         # write to correpsonding output file        
-        outputs[x][y].write(str(i + 1) + ' ' + ' '.join(shape) + '\n')             
+        outputs[x][y].write(' '.join(shape) + '\n')             
 
 # close files
 for i in range(len(YEARS)):
