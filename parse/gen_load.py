@@ -92,7 +92,7 @@ for i in range(len(YEARS)):
     for j in range(len(MODELS)):
         outputs[i].append([])
         for k in range(len(MONTHS)):
-            f = open('../data/load/pv/' + YEARS[i] + MODELS[j] + MONTHS[k][:-1] + '.txt', 'w')
+            f = open('../data/load/' + YEARS[i] + MODELS[j] + MONTHS[k][:-1] + '.txt', 'w')
             # Write bin size
             f.write(str(24 * 12 / BIN_SIZE) + '\n')
             outputs[i][j].append(f)
@@ -107,15 +107,33 @@ for i in range(N - 1):
     tree[int(line[0])].append(int(line[1]))
 lines.close()
 
+m = loadmat('../data/output_bfs_social/2012_07_15_00_00_00_PDT/case2065_BFS_2012baseline_2012_07_15_00_00_00_PDT_20140325_1424.mat')
+branch = m['network']['branch'][0][0]
+r = {} # resistance
+for i in range(N - 1):
+    x = int(branch[i][0].real)
+    y = int(branch[i][1].real)
+    idx = 5 # A
+    if int(branch[i][3].real) == 1:
+        idx = 9 # B
+    elif int(branch[i][4].real) == 1:
+        idx = 13 # C
+    r[(x, y)] = branch[i][idx].real
+
+
 queue = deque()
 queue.append(ROOT)
 hops = {}
+res = {}
 hops[ROOT] = 0
+res[ROOT] = 0
 while len(queue) > 0:
     curr = queue.popleft()
     for node in tree[curr]:
         hops[node] = hops[curr] + 1
+        res[node] = res[curr] + r[(curr, node)]
         queue.append(node)
+
 
 for mat in INPUTS:
     print "Processing: " + mat    
@@ -141,7 +159,8 @@ for mat in INPUTS:
             index += 3   
         shape = rebin(raw_shape)
         # write to correpsonding output file        
-        outputs[x][y][z].write(str(i + 1) + ' ' + str(hops[i + 1]) + ' ')
+        outputs[x][y][z].write(str(i + 1) + ' ' + str(hops[i + 1]) + 
+            ' ' + '%1.4f' % res[i + 1] + ' ')
         for d in devices[i + 1]:
             outputs[x][y][z].write(str(d) + ' ')
         outputs[x][y][z].write(' '.join(shape) + '\n')
